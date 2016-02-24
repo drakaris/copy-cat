@@ -5,11 +5,14 @@ import json
 from selenium import webdriver
 
 # Helper methods
-def clothing_scraper(browser,links):
-	# Iterate through links
-	for link in links:
-		browser.get(link)
-		print link
+def populate_menu(item,xpath):
+	# Declare global variables
+	global scrape_list
+
+	elements = browser.find_elements_by_xpath(xpath)
+
+	for e in elements:
+		scrape_list[item].append(e.get_attribute('href'))
 
 # Scrape structure
 scrape_list = {
@@ -27,18 +30,11 @@ browser.implicitly_wait(15)
 browser.get("http://www.birdsnest.com.au")
 
 # Populate menu list for clothing
-elements = browser.find_elements_by_xpath('//*[@id="js-header__nav"]/li[2]/ul/li/a')
-
-for e in elements:
-	scrape_list['clothing'].append(e.get_attribute('href'))
+populate_menu('clothing','//*[@id="js-header__nav"]/li[2]/ul/li/a')
 
 # Populate menu list for accessories
-elements = browser.find_elements_by_xpath('//*[@id="js-header__nav"]/li[6]/ul/li/a')
+populate_menu('accessories','//*[@id="js-header__nav"]/li[6]/ul/li/a')
 
-for e in elements:
-	scrape_list['accessories'].append(e.get_attribute('href'))
-
-# Call clothing scraper
-clothing_scraper(browser, scrape_list['clothing'])
+print scrape_list
 
 browser.quit()
