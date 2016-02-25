@@ -133,6 +133,7 @@ def scrape(key,url):
 						if len(product_cache['products']) == label_count:
 							repeat = 0
 							#### Database insertion logic goes here ####
+							
 						else:
 							repeat = 1
 							print 'Inconsistent data'
