@@ -17,7 +17,7 @@ def outfit_write_to_db(metadata):
 	try:
 		graph.create(data)
 	except:
-		f = open("data_dump/error.log","a")
+		f = open("outfit_error.log","a")
 		f.write(metadata['url'] + '\n')
 		f.close()
 
