@@ -1,8 +1,15 @@
 import time
 from datetime import datetime
 from selenium import webdriver
+from py2neo import Graph,Node,Relationship,watch
 
 # Helper methods
+def database_insert(key,product_cache):
+	# Append extra_ to product tag
+	product_cache['tag'] = str('extra_' + product_cache['tag'])
+
+	# Check for 'key' node
+
 def populate_menu(item,xpath):
 	# Declare global variables
 	global scrape_list
@@ -133,6 +140,7 @@ def scrape(key,url):
 						if len(product_cache['products']) == label_count:
 							repeat = 0
 							#### Database insertion logic goes here ####
+							database_insert(key,product_cache)
 							
 						else:
 							repeat = 1
