@@ -1,7 +1,6 @@
 from py2neo import Graph,Node,Relationship,watch
 from lxml import html
 import requests
-import json
 
 # Product scrape method
 def product_scrape(x):
