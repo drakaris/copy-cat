@@ -1,8 +1,5 @@
 import time
 from datetime import datetime
-from lxml import html
-import requests
-import json
 from selenium import webdriver
 
 # Helper methods
@@ -93,7 +90,7 @@ def scrape(key,url):
 							h.close()
 
 							f = open("logs/deep_error.log","a")
-							f.write('[' + str(datetime.now()) + '] ' + e.message + '\n')
+							f.write('[' + str(datetime.now()) + '] ' + 'Label/Label count error' + '\n')
 							f.close()
 						# Get product url with pagination
 						while(1):
@@ -108,7 +105,7 @@ def scrape(key,url):
 									h.close()
 
 									f = open("logs/deep_error.log","a")
-									f.write('[' + str(datetime.now()) + '] ' + e.message + '\n')
+									f.write('[' + str(datetime.now()) + '] ' + 'Product url append error' + '\n')
 									f.close()
 
 							# Move to next page
@@ -135,6 +132,7 @@ def scrape(key,url):
 						# Perform consitency check
 						if len(product_cache['products']) == label_count:
 							repeat = 0
+							#### Database insertion logic goes here ####
 						else:
 							repeat = 1
 							print 'Inconsistent data'
@@ -180,7 +178,7 @@ populate_menu('clothing','//*[@id="js-header__nav"]/li[2]/ul/li/a')
 # Populate menu list for accessories
 populate_menu('accessories','//*[@id="js-header__nav"]/li[6]/ul/li/a')
 
-#while scrape(scrape_list['accessories'][0]):
+#while scrape('accessories',scrape_list['accessories'][7]):
 #	continue
 
 for key in scrape_list:
