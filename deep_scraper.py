@@ -119,7 +119,7 @@ def scrape(key,url):
 									time.sleep(4)
 								else:
 									browser.find_element_by_xpath('//*[@id="js-filtered_items"]/div[1]/div/div[2]/div[2]/div/div/span[2]/a').click()
-									print 'Navigated to page ' + (paginate_index + 1)
+									print 'Navigated to next page '
 									time.sleep(4)
 							except Exception as e:
 								print 'End of pages'
@@ -161,7 +161,7 @@ scrape_list = {
 }
 
 # Base url
-base_url = 'http://www.birdsnest.com.au/women/'
+base_url = 'http://www.birdsnest.com.au/womens/'
 # Scrape exclusion
 scrape_exclude_list = ['lifestyle']
 
@@ -185,10 +185,8 @@ populate_menu('accessories','//*[@id="js-header__nav"]/li[6]/ul/li/a')
 
 for key in scrape_list:
 	for k in scrape_list[key]:
-		#print key + ' => ' + k
 		for e in scrape_exclude_list:
 			if k == base_url + e:
-				# Skip and continue
 				continue
 			else:
 				while scrape(key,k):
