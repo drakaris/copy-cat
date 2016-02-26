@@ -151,12 +151,12 @@ def product_scrape(label,x):
 	print 'Pushing ' + metadata['url']
 	node.push()
 
-def database_insert(key,product_cache):
+def database_insert(key,p_cache):
 	# Neo4j settings
 	global graph
 
 	# Append extra_ to product tag
-	product_cache['tag'] = str('extra_' + product_cache['tag'])
+	p_cache['tag'] = str('extra_' + p_cache['tag'])
 
 	# Set 'key' as label
 	label = key
@@ -165,7 +165,7 @@ def database_insert(key,product_cache):
 	watch("httpstream")
 
 	# Search for nodes based on url under Products
-	for url in product_cache['products']:
+	for url in p_cache['products']:
 		format = url.split('#')
 		url = format[0]
 		node = graph.find_one('Products','url',url)
@@ -173,16 +173,16 @@ def database_insert(key,product_cache):
 			# This means node exists, add properties and push
 			print 'Pushing ' + url
 			# Check if property already exists
-			if node.properties[product_cache['tag']]:
+			if node.properties[p_cache['tag']]:
 				# Append to existing property
-				temp = node.properties[product_cache['tag']]
-				temp.append(product_cache['value'])
-				node.properties[product_cache['tag']] = list(temp)
-				print node.properties[product_cache['tag']]
+				temp = node.properties[p_cache['tag']]
+				temp.append(p_cache['value'])
+				node.properties[p_cache['tag']] = list(temp)
+				print node.properties[p_cache['tag']]
 			else:
 				# Create property
-				node.properties[product_cache['tag']] = list(product_cache['value'])
-				print node.properties[product_cache['tag']]
+				node.properties[p_cache['tag']] = list(p_cache['value'])
+				print node.properties[p_cache['tag']]
 			# Add 'key' as label
 			node.labels.add(label)
 			node.push()
@@ -190,8 +190,8 @@ def database_insert(key,product_cache):
 			# This means node doesn not exist, create and insert
 			print 'Creating ' + url
 			tmp = Node()
-			tmp.properties[product_cache['tag']] = []
-			tmp.properties[product_cache['tag']].append(product_cache['value'])
+			tmp.properties[p_cache['tag']] = []
+			tmp.properties[p_cache['tag']].append(p_cache['value'])
 			tmp.properties['url'] = url
 			tmp.labels.add(label)
 			graph.create(tmp)
@@ -358,7 +358,7 @@ scrape_list = {
 }
 
 # Graph init
-graph = Graph("http://neo4j:test@localhost:7474/db/data")
+graph = Graph("http://neo4j:$haringan1208!@localhost:7474/db/data")
 
 # Base url
 base_url = 'http://www.birdsnest.com.au/womens/'
