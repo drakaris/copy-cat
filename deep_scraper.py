@@ -178,7 +178,7 @@ def database_insert(key,p_cache):
 				temp = node.properties[p_cache['tag']]
 				temp.append(p_cache['value'])
 				print p_cache['value']
-				node.properties[p_cache['tag']] = set(temp)
+				node.properties[p_cache['tag']] = temp
 			else:
 				# Create property
 				o = []
