@@ -175,12 +175,15 @@ def database_insert(key,p_cache):
 			# Check if property already exists
 			if node.properties[p_cache['tag']]:
 				# Append to existing property
-				temp = node.properties[p_cache['tag']]
-				temp.append(p_cache['value'])
-				node.properties[p_cache['tag']] = list(temp)
+				node.properties[p_cache['tag']].append(p_cache['value'])
+				#temp = node.properties[p_cache['tag']]
+				#temp.append(p_cache['value'])
+				#node.properties[p_cache['tag']] = list(temp)
 			else:
 				# Create property
-				node.properties[p_cache['tag']] = p_cache['value']
+				o = []
+				o.append(p_cache['value'])
+				node.properties[p_cache['tag']] = o
 			# Add 'key' as label
 			node.labels.add(label)
 			node.push()
