@@ -188,8 +188,9 @@ def database_insert(key,p_cache):
 			# This means node doesn not exist, create and insert
 			print 'Creating ' + url
 			tmp = Node()
-			tmp.properties[p_cache['tag']] = []
-			tmp.properties[p_cache['tag']].append(p_cache['value'])
+			o = []
+			o.append(p_cache['value'])
+			tmp.properties[p_cache['tag']] = o
 			tmp.properties['url'] = url
 			tmp.labels.add(label)
 			graph.create(tmp)
