@@ -177,10 +177,12 @@ def database_insert(key,product_cache):
 				# Append to existing property
 				temp = node.properties[product_cache['tag']]
 				temp.append(product_cache['value'])
-				node.properties[product_cache['tag']] = set(temp)
+				node.properties[product_cache['tag']] = list(temp)
+				print node.properties[product_cache['tag']]
 			else:
 				# Create property
 				node.properties[product_cache['tag']] = list(product_cache['value'])
+				print node.properties[product_cache['tag']]
 			# Add 'key' as label
 			node.labels.add(label)
 			node.push()
