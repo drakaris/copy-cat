@@ -2,13 +2,193 @@ import time
 from datetime import datetime
 from selenium import webdriver
 from py2neo import Graph,Node,Relationship,watch
+from lxml import html
+import requests
+
 
 # Helper methods
+def product_scrape(label,x):
+	# Accepts URL returns graph node
+	# Data structure schema
+	metadata = {
+	'name' : '',
+	'brand' : '',
+	'price' : '',
+	'url' : '',
+	'image' : [],
+	'about' : [],
+	'features' : [''],
+	'tags' : [''],
+	'Boobs' : [''],
+	'Tummy' : [''],
+	'Hips' : [''],
+	'occasions' : [''],
+	'collections' : [''],
+	'personalities' : [''],
+	'related_body_shapes' : [''],
+	'related_outfits_count' : ''
+	}
+
+	exclusion_list = {
+	'p' : ['','Style code:'],
+	'a' : ['','womens','shop-by','outfits']
+	}
+
+	# Load global graph variable
+	global graph
+
+	# Load product page
+	r = requests.get(x)
+
+	# Construct DOM trees
+	domTree = html.fromstring(r.content)
+	tree = domTree.getroottree()
+
+	# Extract product name
+	name = domTree.xpath('//*[@id="js-item_middle"]/h5/text()')
+	print name[0].strip()
+	metadata['name'] = name[0].strip()
+
+	# Extract product brand
+	brand = domTree.xpath('//*[@id="js-item_middle"]/h1/a/text()')
+	print '\t> Brand: ' + brand[0].strip()
+	metadata['brand'] = brand[0].strip()
+
+	# Extract product price
+	price = domTree.xpath('//*[@id="item_price"]/h5/text()')
+	print '\t> Price: ' + price[0].strip()
+	metadata['price'] = price[0].strip()
+
+	# Store product url
+	metadata['url'] = x
+	print '\t> URL: ' + metadata['url']
+
+	# Extract product images
+	image = list(set(domTree.xpath('//*[@id="js-container"]/div[1]/div[1]/div[2]//img/@src')))
+	print '\t> Image(s): ' + str(len(image))
+	metadata['image'] = image
+
+	# Extract product description
+	about = domTree.xpath('//*[@id="tab0"]//p/text()')
+	for i in range(0,len(about)):
+		about[i] = about[i].strip()
+	for rem in exclusion_list['p']:
+		about.remove(rem)
+	print '\t> About: ' + str(len(about)) + ' paragraph(s)'
+	metadata['about'] = about
+
+	# Extract product features
+	features = list(set(domTree.xpath('//*[@id="tab0"]//li/text()')))
+	print '\t> Feature(s): ' + str(len(features))
+	metadata['features'] = features
+
+	# Extract product tags
+	tags = list(set(domTree.xpath('//*[@id="tab0"]/div[3]//a/text()')))
+	for i in range(0,len(tags)):
+		tags[i] = tags[i].strip()
+	print '\t> Tag(s): ' + str(len(tags))
+	metadata['tags'] = tags
+
+	# Extract product body shapes
+	body_data = domTree.xpath('//div[@class="input--circle checked"]')
+	for e in body_data:
+		body_part = 'string(' + tree.getpath(e.getparent().getparent().getparent().getparent().getprevious()) + ')'
+		body_part =  domTree.xpath(body_part).strip()
+		tag = 'string(' + tree.getpath(e.getnext()) + ')'
+		tag =  domTree.xpath(tag).strip()
+		metadata[body_part].append(tag)
+	print '\t> Boobs: ' + str(metadata['Boobs'])
+	print '\t> Tummy: ' + str(metadata['Tummy'])
+	print '\t> Hips: ' + str(metadata['Hips'])
+
+	# Extract additional product metadata
+	links = list(set(domTree.xpath('//*[@id="tab1"]//a/@href')))
+	for link in links:
+		link_digested = link.split('/')
+		for x in exclusion_list['a']:
+			try:
+				link_digested.remove(x)
+			except:
+				continue
+		if link_digested[0] == 'body_shape':
+			metadata['related_body_shapes'].append(link_digested[1])
+		if link_digested[0] == 'occasion':
+			metadata['occasions'].append(link_digested[1])
+		if link_digested[0] == 'personality':
+			metadata['personalities'].append(link_digested[1])
+		if link_digested[0] == 'collection':
+			metadata['collections'].append(link_digested[1])
+	print '\t> Related body fits: ' + str(len(metadata['related_body_shapes']))
+	print '\t> Occasion(s): ' + str(len(metadata['occasions']))
+	print '\t> Personality(s): ' + str(len(metadata['personalities']))
+	print '\t> Collection(s): ' + str(len(metadata['collections']))
+
+	# Extract number of related outfits
+	n_outfits = domTree.xpath('//*[@id="js-complete_the_look__index"]/text()')
+	for i in range(0,len(n_outfits)):
+		n_outfits[i] = n_outfits[i].strip()
+		n = n_outfits[i].split(' ')
+	if len(n_outfits):
+		n_outfits = n[2]
+	else:
+		n_outfits = 0
+	print '\t> Related outfits: ' + str(n_outfits)
+	metadata['related_outfits_count'] = n_outfits
+
+	# Find url under given label
+	node = graph.find_one(label,'url',metadata['url'])
+
+	# Iterate through metadata
+	for m in metadata:
+		node.properties[m] = metadata[m]
+	node.labels.add('Products')
+	print 'Pushing ' + metadata['url']
+	node.push()
+
 def database_insert(key,product_cache):
+	# Neo4j settings
+	global graph
+
 	# Append extra_ to product tag
 	product_cache['tag'] = str('extra_' + product_cache['tag'])
 
-	# Check for 'key' node
+	# Set 'key' as label
+	label = key
+
+	# Set watcher for db requests
+	watch("httpstream")
+
+	# Search for nodes based on url under Products
+	for url in product_cache['products']:
+		node = graph.find_one('Products','url',url)
+		if node:
+			# This means node exists, add properties and push
+			print 'Pushing ' + url
+			# Check if property already exists
+			if node.properties[product_cache['tag']]:
+				# Append to existing property
+				temp = node.properties[product_cache['tag']]
+				temp.append(product_cache['value'])
+				node.properties[product_cache['tag']] = set(temp)
+			else:
+				# Create property
+				node.properties[product_cache['tag']] = list(product_cache['value'])
+			# Add 'key' as label
+			node.labels.add(label)
+			node.push()
+		else:
+			# This means node doesn not exist, create and insert
+			print 'Creating ' + url
+			tmp = Node()
+			tmp.properties[product_cache['tag']] = []
+			tmp.properties[product_cache['tag']].append(product_cache['value'])
+			tmp.properties['url'] = url
+			tmp.labels.add(label)
+			graph.create(tmp)
+
+			# Call scrape function to scrape remaining data
+			product_scrape(label,url)
+
 
 def populate_menu(item,xpath):
 	# Declare global variables
@@ -166,6 +346,9 @@ scrape_list = {
 	'clothing' : [],
 	'accessories' : []
 }
+
+# Graph init
+graph = Graph("http://neo4j:test@localhost:7474/db/data")
 
 # Base url
 base_url = 'http://www.birdsnest.com.au/womens/'
