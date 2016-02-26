@@ -80,14 +80,20 @@ def product_scrape(label,x):
 	# Extract product features
 	features = list(set(domTree.xpath('//*[@id="tab0"]//li/text()')))
 	print '\t> Feature(s): ' + str(len(features))
-	metadata['features'] = features
+	if len(features):
+		metadata['features'] = features
+	else:
+		metadata['features'] = 'None'
 
 	# Extract product tags
 	tags = list(set(domTree.xpath('//*[@id="tab0"]/div[3]//a/text()')))
 	for i in range(0,len(tags)):
 		tags[i] = tags[i].strip()
 	print '\t> Tag(s): ' + str(len(tags))
-	metadata['tags'] = tags
+	if len(tags):
+		metadata['tags'] = tags
+	else:
+		metadata['tags'] = 'None'
 
 	# Extract product body shapes
 	body_data = domTree.xpath('//div[@class="input--circle checked"]')
@@ -160,6 +166,8 @@ def database_insert(key,product_cache):
 
 	# Search for nodes based on url under Products
 	for url in product_cache['products']:
+		format = url.split('#')
+		url = format[0]
 		node = graph.find_one('Products','url',url)
 		if node:
 			# This means node exists, add properties and push
