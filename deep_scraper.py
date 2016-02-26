@@ -177,11 +177,13 @@ def database_insert(key,p_cache):
 				# Append to existing property
 				temp = node.properties[p_cache['tag']]
 				temp.append(p_cache['value'])
+				print p_cache['value']
 				node.properties[p_cache['tag']] = set(temp)
 			else:
 				# Create property
 				o = []
 				o.append(p_cache['value'])
+				print p_cache['value']
 				node.properties[p_cache['tag']] = o
 			# Add 'key' as label
 			node.labels.add(label)
