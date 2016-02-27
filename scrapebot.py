@@ -7,7 +7,7 @@ class scrapeBot:
 	# Main class
 	# Variable declaration
 	base_url = 'http://www.birdsnest.com.au'
-	graph = Graph("http://neo4j:$haringan1208!@localhost:7474/db/data")
+	graph = Graph("http://neo4j:test@localhost:7474/db/data")
 	
 	# Methods
 	def __init__(self):
