@@ -61,7 +61,7 @@ class scrapeBot:
 			outfit['href'] = self.get_href(outfit['id'],domTree)
 			
 			# Pass outfit to outfit scraper method
-			print 'Scraping outfits'
+			print 'Scraping ' + outfit['name']
 			self.outfit_scrape(outfit)
 
 	def collect_outfits(self):
@@ -71,21 +71,32 @@ class scrapeBot:
 		header = {
 		'Accept' : 'application/json'
 		}
+		
+		# Start while loop to iterate pages
+		switch = 1
 		# Variables for query building
 		index = 1
 		attribute = 'page'
-		# Build query for page(s)
-		print 'Building query'
-		query = self.build_query(url,attribute,index)
-		# Process query
-		outfit_data = json.loads(requests.get(query,headers = header).text)
+		
+		while switch:
+			# Build query for page(s)
+			print 'Building query'
+			query = self.build_query(url,attribute,index)
+			# Process query
+			outfit_data = json.loads(requests.get(query,headers = header).text)
 
-		# Load HTMl objects from outfit data
-		if outfit_data['head']['code'] == 200:
-			print 'Parsing outfits'
-			self.parse_outfits(outfit_data)
-		else:
-			print ''
+			# Load HTMl objects from outfit data
+			if outfit_data['head']['code'] == 200:
+				if len(outfit_data['body']['outfits']) > 0:
+					print 'Parsing outfits'
+					self.parse_outfits(outfit_data)
+					index = index + 1
+				else:
+					switch = 0
+			else:
+				print ''
+
+		print 'Done collecting outfits'
 
 	def outfit_scrape(self,outfit):
 	# Data structure for scraped data
