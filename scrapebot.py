@@ -84,83 +84,83 @@ class scrapeBot:
 
 	def outfit_scrape(self,outfit):
 	# Data structure for scraped data
-	metadata = {
-		'name' : '',
-		'id' : '',
-		'about' : '',
-		'url' : '',
-		'image' : '',
-		'products' : [],
-		'Boobs' : [],
-		'Tummy' : [],
-		'Hips' : [],
-		'related_body_shapes' : [],
-		'occasions' : [],
-		'personalities' : [],
-		'collections' : []
-	}
+		metadata = {
+			'name' : '',
+			'id' : '',
+			'about' : '',
+			'url' : '',
+			'image' : '',
+			'products' : [],
+			'Boobs' : [],
+			'Tummy' : [],
+			'Hips' : [],
+			'related_body_shapes' : [],
+			'occasions' : [],
+			'personalities' : [],
+			'collections' : []
+		}
 
-	exclusion_list = ['','womens','shop-by','outfits']
+		exclusion_list = ['','womens','shop-by','outfits']
 
-	# Process data from outfit object
-	metadata['id'] = outfit['id']
-	metadata['name'] = outfit['name']
-	url = outfit['href']
+		# Process data from outfit object
+		metadata['id'] = outfit['id']
+		metadata['name'] = outfit['name']
+		url = outfit['href']
 
-	r = requests.get(url)
-	domTree = html.fromstring(r.content)
+		r = requests.get(url)
+		domTree = html.fromstring(r.content)
 
-	tree = domTree.getroottree()
+		tree = domTree.getroottree()
 
-	about = list(set(domTree.xpath('//*[@id="tab0"]/text()')))
-	for i in range(0,2):
-		about[i] = about[i].strip()
-	about.remove('')
+		about = list(set(domTree.xpath('//*[@id="tab0"]/text()')))
+		for i in range(0,2):
+			about[i] = about[i].strip()
+		about.remove('')
 
-	# Store outfit description
-	metadata['about'] = about
+		# Store outfit description
+		metadata['about'] = about
 
-	# Store outfit URL
-	metadata['url'] = url
+		# Store outfit URL
+		metadata['url'] = url
 
-	# Store outfit image
-	metadata['image'] = list(set(domTree.xpath('//*[@id="js-container"]/div[3]/div[1]//img/@src')))
+		# Store outfit image
+		metadata['image'] = list(set(domTree.xpath('//*[@id="js-container"]/div[3]/div[1]//img/@src')))
 
-	# Store contituent product data
-	metadata['products'] = list(set(domTree.xpath('//div[@class="item_grid_member"]//a/@href')))
-	
-	body_data = domTree.xpath('//div[@class="input--circle checked"]')
+		# Store contituent product data
+		metadata['products'] = list(set(domTree.xpath('//div[@class="item_grid_member"]//a/@href')))
+		
+		body_data = domTree.xpath('//div[@class="input--circle checked"]')
 
-	for e in body_data:
-		body_part = 'string(' + tree.getpath(e.getparent().getparent().getparent().getparent().getprevious()) + ')'
-		body_part =  domTree.xpath(body_part).strip()
-		tag = 'string(' + tree.getpath(e.getnext()) + ')'
-		tag =  domTree.xpath(tag).strip()
-		metadata[body_part].append(tag)
+		for e in body_data:
+			body_part = 'string(' + tree.getpath(e.getparent().getparent().getparent().getparent().getprevious()) + ')'
+			body_part =  domTree.xpath(body_part).strip()
+			tag = 'string(' + tree.getpath(e.getnext()) + ')'
+			tag =  domTree.xpath(tag).strip()
+			metadata[body_part].append(tag)
 
-	# Get all hyperlinks present in 'tab1' for processing
-	href = domTree.xpath('//div[@id="tab1"]//a/@href')
-	
-	# Process href for additional metadata
-	for link in href:
-		#print link
-		link_digested = link.split('/')
-		for x in exclusion_list:
-			try:
-				link_digested.remove(x)
-			except:
-				continue
-		if link_digested[0] == 'body_shape':
-			metadata['related_body_shapes'].append(link_digested[1])
-		if link_digested[0] == 'occasion':
-			metadata['occasions'].append(link_digested[1])
-		if link_digested[0] == 'personality':
-			metadata['personalities'].append(link_digested[1])
-		if link_digested[0] == 'collection':
-			metadata['collections'].append(link_digested[1])
-	
-	# Write metadata to graph
-	self.outfit_write(metadata)
+		# Get all hyperlinks present in 'tab1' for processing
+		href = domTree.xpath('//div[@id="tab1"]//a/@href')
+		
+		# Process href for additional metadata
+		for link in href:
+			#print link
+			link_digested = link.split('/')
+			for x in exclusion_list:
+				try:
+					link_digested.remove(x)
+				except:
+					continue
+			if link_digested[0] == 'body_shape':
+				metadata['related_body_shapes'].append(link_digested[1])
+			if link_digested[0] == 'occasion':
+				metadata['occasions'].append(link_digested[1])
+			if link_digested[0] == 'personality':
+				metadata['personalities'].append(link_digested[1])
+			if link_digested[0] == 'collection':
+				metadata['collections'].append(link_digested[1])
+		
+		# Write metadata to graph
+		self.outfit_write(metadata)
 
 def outfit_write(self,metadata):
 		
