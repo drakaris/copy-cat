@@ -98,9 +98,6 @@ def outfit_scrape(url):
 	#print metadata
 	outfit_write_to_db(metadata)
 
-	#global graph
-	#data = Node.cast(metadata)
-
 # Global Neo4j declaration
 graph = Graph("http://neo4j:$haringan1208!@localhost:7474/db/data")
 

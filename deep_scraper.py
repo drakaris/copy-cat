@@ -156,7 +156,7 @@ def database_insert(key,p_cache):
 	global graph
 
 	# Append extra_ to product tag
-	p_cache['tag'] = str('extra_' + p_cache['tag'])
+	#p_cache['tag'] = str('extra_' + p_cache['tag'])
 
 	# Set 'key' as label
 	label = key
@@ -177,13 +177,13 @@ def database_insert(key,p_cache):
 				# Append to existing property
 				temp = node.properties[p_cache['tag']]
 				temp.append(p_cache['value'])
-				print p_cache['value']
-				node.properties[p_cache['tag']] = temp
+				node.properties['type'] = p_cache['type']
+				node.properties[p_cache['tag']] = set(temp)
 			else:
 				# Create property
 				o = []
 				o.append(p_cache['value'])
-				print p_cache['value']
+				node.properties['type'] = p_cache['type']
 				node.properties[p_cache['tag']] = o
 			# Add 'key' as label
 			node.labels.add(label)
@@ -196,6 +196,7 @@ def database_insert(key,p_cache):
 			o.append(p_cache['value'])
 			tmp.properties[p_cache['tag']] = o
 			tmp.properties['url'] = url
+			tmp.properties['type'] = p_cache['type']
 			tmp.labels.add(label)
 			graph.create(tmp)
 
@@ -226,6 +227,7 @@ def scrape(key,url):
 	product_cache = {
 	'tag' : '',
 	'value' : '',
+	'type' : '',
 	'products' : []
 	}
 
@@ -238,6 +240,10 @@ def scrape(key,url):
 	# Find first filter element and close by clicking
 
 	browser.find_element_by_xpath('//*[@id="js-filters"]/div[1]/div/div[1]').click()
+
+	# Set data type
+	tt = url.split('/')
+	product_cache['type'] = tt[4]
 	
 	# Get all filter DOM sections
 	filters_elements = browser.find_elements_by_class_name('js-filter-section')
@@ -246,7 +252,7 @@ def scrape(key,url):
 		# Check if filter is required
 		if filters.get_attribute('data-displayname') in filter_list[key]:
 			# Store data-displayname in product cache as tag
-			product_cache['tag'] = filters.get_attribute('data-displayname')
+			product_cache['tag'] = str('extra_' + filters.get_attribute('data-displayname'))
 			# Click to expand filter options
 			filters.find_element_by_class_name('twisty_title').click()
 			# Get list of filter labels
@@ -334,7 +340,6 @@ def scrape(key,url):
 							repeat = 0
 							#### Database insertion logic goes here ####
 							database_insert(key,product_cache)
-							
 						else:
 							repeat = 1
 							print 'Inconsistent data'
