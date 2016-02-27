@@ -15,7 +15,9 @@ class scrapeBot:
 
 		# Try loading categories & filters
 		if self.populate_categories():
+			print 'Populating Categories'
 			if self.populate_filters():
+				print 'Populating Filters'
 				self.collect_outfits()
 			else:
 				# Report error to dashboard
@@ -59,7 +61,8 @@ class scrapeBot:
 			outfit['href'] = self.get_href(outfit['id'],domTree)
 			
 			# Pass outfit to outfit scraper method
-			outfit_scrape(outfit)
+			print 'Scraping outfits'
+			self.outfit_scrape(outfit)
 
 	def collect_outfits(self):
 		# Query API for outfits
@@ -72,12 +75,14 @@ class scrapeBot:
 		index = 1
 		attribute = 'page'
 		# Build query for page(s)
+		print 'Building query'
 		query = self.build_query(url,attribute,index)
 		# Process query
 		outfit_data = json.loads(requests.get(query,headers = header).text)
 
 		# Load HTMl objects from outfit data
 		if outfit_data['head']['code'] == 200:
+			print 'Parsing outfits'
 			self.parse_outfits(outfit_data)
 		else:
 			print ''
