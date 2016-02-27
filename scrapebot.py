@@ -167,22 +167,22 @@ class scrapeBot:
 		# Write metadata to graph
 		self.outfit_write(metadata)
 
-def outfit_write(self,metadata):
-		
-	# Handle empty list values in metadata
-	for m in metadata:
-		if not metadata[m]:
-			metadata[m].append('Null')
+	def outfit_write(self,metadata):
+			
+		# Handle empty list values in metadata
+		for m in metadata:
+			if not metadata[m]:
+				metadata[m].append('Null')
 
-	data = Node.cast(metadata)
-	data.labels.add("Outfits")
-	watch("httpstream")
-	try:
-		self.graph.create(data)
-	except:
-		f = open("outfit_error.log","a")
-		f.write(metadata['url'] + '\n')
-		f.close()
+		data = Node.cast(metadata)
+		data.labels.add("Outfits")
+		watch("httpstream")
+		try:
+			self.graph.create(data)
+		except:
+			f = open("outfit_error.log","a")
+			f.write(metadata['url'] + '\n')
+			f.close()
 
 
 
