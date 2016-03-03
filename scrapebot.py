@@ -8,7 +8,7 @@ class scrapeBot:
 	# Variable declaration
 	base_url = 'http://www.birdsnest.com.au'
 	graph = Graph("http://neo4j:test@localhost:7474/db/data")
-	
+
 	# Methods
 	def __init__(self):
 		# Area for NodeJs terminal dashboard
@@ -60,7 +60,7 @@ class scrapeBot:
 		for outfit in outfit_data['body']['outfits']:
 			outfit['id'] = self.append_o(outfit['id'])
 			outfit['href'] = self.get_href(outfit['id'],domTree)
-			
+
 			# Pass outfit to outfit scraper method
 			print 'Scraping ' + outfit['name']
 			self.outfit_scrape(outfit)
@@ -72,13 +72,13 @@ class scrapeBot:
 		header = {
 		'Accept' : 'application/json'
 		}
-		
+
 		# Start while loop to iterate pages
 		switch = 1
 		# Variables for query building
 		index = 1
 		attribute = 'page'
-		
+
 		while switch:
 			# Build query for page(s)
 			print 'Building query'
@@ -145,7 +145,7 @@ class scrapeBot:
 
 		# Store contituent product data
 		metadata['products'] = list(set(domTree.xpath('//div[@class="item_grid_member"]//a/@href')))
-		
+
 		body_data = domTree.xpath('//div[@class="input--circle checked"]')
 
 		for e in body_data:
@@ -157,7 +157,7 @@ class scrapeBot:
 
 		# Get all hyperlinks present in 'tab1' for processing
 		href = domTree.xpath('//div[@id="tab1"]//a/@href')
-		
+
 		# Process href for additional metadata
 		for link in href:
 			#print link
@@ -175,12 +175,12 @@ class scrapeBot:
 				metadata['personalities'].append(link_digested[1])
 			if link_digested[0] == 'collection':
 				metadata['collections'].append(link_digested[1])
-		
+
 		# Write metadata to graph
 		self.outfit_write(metadata)
 
 	def outfit_write(self,metadata):
-			
+
 		# Handle empty list values in metadata
 		for m in metadata:
 			if not metadata[m]:
@@ -198,7 +198,7 @@ class scrapeBot:
 
 	# Product data extraction method
 	def product_details(self,outfit_node):
-				
+		watch("httpstream")
 		print '[Exploring] ' + outfit_node.properties['name']
 		for z in outfit_node.properties['products']:
 			# Check for product node in db
@@ -212,7 +212,7 @@ class scrapeBot:
 					self.graph.create(rel)
 			else:
 				# Generate product node, pass url for scrape, returns graph node
-				product_node = self.product_scrape(base_url + z)
+				product_node = self.product_scrape(self.base_url + z)
 				rel = Relationship(outfit_node, "HAS", product_node)
 				self.graph.create(rel)
 
@@ -221,6 +221,7 @@ class scrapeBot:
 		# Accepts URL returns graph node
 		# Data structure schema
 		metadata = {
+		'id' : '',
 		'name' : '',
 		'brand' : '',
 		'price' : '',
@@ -255,6 +256,12 @@ class scrapeBot:
 		name = domTree.xpath('//*[@id="js-item_middle"]/h5/text()')
 		print name[0].strip()
 		metadata['name'] = name[0].strip()
+
+		# Extract product ID from URL
+		id_data = x.split('/')
+		id_data = id_data[len(id_data) - 1].split('-')[0]
+		print '\t> ID: ' + id_data
+		metadata['id'] = id_data
 
 		# Extract product brand
 		brand = domTree.xpath('//*[@id="js-item_middle"]/h1/a/text()')
