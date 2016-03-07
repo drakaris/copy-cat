@@ -21,8 +21,8 @@ class scrapeBot:
 				print '> Populating Filters'
 				print '> Cleaning Filters'
 				self.cleanFilters()
-				#self.collect_outfits()
-				#self.collect_products()
+				self.collect_outfits()
+				self.collect_products()
 				print '> Building Hierarchy'
 				if self.buildHierarchy():
 					# Traverse Hierarchy
