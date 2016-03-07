@@ -8,6 +8,7 @@ class scrapeBot:
 	# Variable declaration
 	base_url = 'http://www.birdsnest.com.au'
 	graph = Graph("http://neo4j:test@localhost:7474/db/data")
+	endpoints = {}
 
 	# Methods
 	def __init__(self):
@@ -15,17 +16,31 @@ class scrapeBot:
 
 		# Try loading categories & filters
 		if self.populate_categories():
-			print 'Populating Categories'
+			print '> Populating Categories'
 			if self.populate_filters():
-				print 'Populating Filters'
+				print '> Populating Filters'
+				print '> Cleaning Filters'
+				self.cleanFilters()
 				#self.collect_outfits()
-				self.collect_products()
+				#self.collect_products()
+				print '> Building Hierarchy'
+				if self.buildHierarchy():
+					# Traverse Hierarchy
+					if self.traverseHierarchy():
+						# Scrape Hierarchy
+						self.scrapeHierarchy()
+					else:
+						# Report error to dashboard
+						print '> Error traversing hierarchy'
+				else:
+					# Report error to dashboard
+					print '> Error building hierarchy'
 			else:
 				# Report error to dashboard
-				print ''
+				print '> Error loading filters'
 		else:
 			# Report error to dashboard
-			print ''
+			print '> Error loading categories'
 
 	def populate_categories(self):
 		url_categories = 'http://www.birdsnest.com.au/api/v1/categories'
@@ -42,6 +57,13 @@ class scrapeBot:
 			return True
 		else:
 			return False
+
+	def cleanFilters(self):
+		junk = ['Brand','Gift Type','Level3','Price','Rating','Size','Status']
+
+		for key in junk:
+			if key in self.filters['body']:
+				del self.filters['body'][key]
 
 	def build_query(self,url,attribute,index):
 		return url + '&' + attribute + '=' + str(index)
@@ -221,7 +243,6 @@ class scrapeBot:
 		# Accepts URL returns graph node
 		# Data structure schema
 		metadata = {
-		'id' : '',
 		'name' : '',
 		'brand' : '',
 		'price' : '',
@@ -261,7 +282,7 @@ class scrapeBot:
 		id_data = x.split('/')
 		id_data = id_data[len(id_data) - 1].split('-')[0]
 		print '\t> ID: ' + id_data
-		metadata['id'] = id_data
+		metadata['id'] = int(id_data)
 
 		# Extract product brand
 		brand = domTree.xpath('//*[@id="js-item_middle"]/h1/a/text()')
@@ -341,7 +362,10 @@ class scrapeBot:
 		for i in range(0,len(n_outfits)):
 			n_outfits[i] = n_outfits[i].strip()
 			n = n_outfits[i].split(' ')
-		n_outfits = n[2]
+		if len(n_outfits):
+			n_outfits = n[2]
+		else:
+			n_outfits = 0
 		print '\t> Related outfits: ' + str(n_outfits)
 		metadata['related_outfits_count'] = n_outfits
 
@@ -356,6 +380,136 @@ class scrapeBot:
 		for x in self.graph.find('Outfits'):
 			# Pass graph node as x
 			self.product_details(x)
+
+	def buildHierarchy(self):
+		self.hierarchy = {}
+
+		applicable_categories = {
+		'0' : '1516',
+		'1' : '1661'
+		}
+
+		for key in applicable_categories:
+			data = applicable_categories[key]
+			self.hierarchy['%s' % data] = self.categories['body']['hierarchy'][0]['1513'][int(key)]['%s' % data]
+		#print self.hierarchy
+		return True
+
+	def buildEndpoints(self,key):
+		keyName = self.getKeyName(int(key)).lower()
+		self.endpoints[keyName] = self.base_url + '/womens/%s?' % keyName
+
+	def getKeyName(self,key):
+		for category in self.categories['body']['categories']:
+			if category['id'] == key:
+				return category['name']
+
+	def traverseHierarchy(self):
+		# Start traversing hierarchy
+		for key in self.hierarchy:
+			for k in self.hierarchy[key]:
+				 # Build endpoints
+				 self.buildEndpoints(k.keys()[0])
+		return True
+
+	def scrapeHierarchy(self):
+		# Scrape Hierarchy
+		switch = 1
+		for key in self.hierarchy:
+			label = self.getKeyName(int(key))
+			for k in self.hierarchy[key]:
+				type = self.getKeyName(int(k.keys()[0]))
+				self.processHierarchy(label,key,type,k.keys()[0])
+
+	def formatFilters(self,filters):
+		# Temporary structures
+		updatedFilters = []
+		filters_keys = filters.keys()
+		# Iterate through filter list
+		for key in self.filters['body'].keys():
+			for filter in self.filters['body'][key]:
+				if str(filter['id']) in filters_keys and filters[str(filter['id'])] != 0:
+					x = {}
+					x['name'] = filter['name']
+					x['id'] = filter['id']
+					x['type'] = key
+					x['amount'] = filters[str(filter['id'])]
+					updatedFilters.append(x)
+		return updatedFilters
+
+	def processHierarchy(self,label,label_key,type,type_key):
+		# Get endpoint for type
+		endpoint = self.endpoints[type.lower()]
+		level_id = type_key
+		page = 1
+		header = {
+		'Accept' : 'application/json'
+		}
+
+		# Add attributes to endpoint
+		endpoint = endpoint + 'level_id=' + level_id
+		# Request endpoints without any filters
+		data = json.loads(requests.get(endpoint + '&page=' + str(page), headers = header).text)
+		# Format and clean returned filters
+		formattedFilters = self.formatFilters(data['body']['filters'])
+		# Apply filters for new item list
+		for filter in formattedFilters:
+			print endpoint
+			self.deepScrape(endpoint,filter['id'],filter['name'],filter['type'],label,type)
+
+	def updateProductNode(self,node,filter_type,filter_name,type):
+		if node.properties[filter_type]:
+			node.properties[filter_type].append(filter_name)
+		else:
+			node.properties[filter_type] = []
+			node.properties[filter_type].append(filter_name)
+		if node.properties['sub_category']:
+			node.properties['sub_category'] = type
+		else:
+			node.properties['sub_category'] = []
+			node.properties['sub_category'].append(type)
+		# Return updated node
+		return node
+
+	def deepScrape(self,endpoint,filter_id,filter_name,filter_type,label,type):
+		# Single filter is applied, scrape associated data only
+		watch("httpstream")
+		page = 1
+		header = {
+		'Accept' : 'application/json'
+		}
+		print 'Applying filter : ' + filter_name
+		while True:
+			endpoint = endpoint + '&filters=' + str(filter_id) + '&page=' + str(page)
+			# Query endpoint
+			data = json.loads(requests.get(endpoint, headers = header).text)
+			# Scrape and paginate through results
+			print 'Page [%d/%d]' % (page,data['body']['counts']['pages'])
+			# Check if product exists based on id
+			for item in data['body']['catalogue_items']:
+				z = self.graph.find_one('Products','id',int(item['item_id']))
+				if z:
+					# Product exists, insert only filters
+					print 'Updating product : %d' % item['item_id']
+					node = self.updateProductNode(z,filter_type,filter_name,type)
+					print 'Applying label : %s' % label
+					node.labels.add(label)
+					self.graph.create(node)
+				else:
+					# Product doesn't exist, scrape and then insert filters
+					print 'Scraping item : %d' % item['item_id']
+					node = self.product_scrape(self.base_url + item['link'])
+					node = self.updateProductNode(node,filter_type,filter_name,type)
+					print 'Applying label : %s' % label
+					node.labels.add(label)
+					self.graph.create(node)
+
+			# Pagination condition check
+			if page < data['body']['counts']['pages']:
+				page = page + 1
+				continue
+			else:
+				break
 
 
 # Check if file is executed directly
